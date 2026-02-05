@@ -1,46 +1,44 @@
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { randomUUID } from "crypto";
 
-const transports: { [sessionId: string]: SSEServerTransport } = {};
+let transport: StreamableHTTPServerTransport | null = null;
 
 export function setupSSEEndpoint(app: any, server: McpServer) {
-  app.get("/sse", async (_: Request, res: Response) => {
-    const transport = new SSEServerTransport("/messages", res);
-    transports[transport.sessionId] = transport;
+  // Initialize transport with stateful mode (generates session IDs)
+  transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+  });
 
-    console.log(`SSE connection established. Session ID: ${transport.sessionId}`);
+  // Connect the transport to the MCP server
+  server.connect(transport).then(() => {
+    console.log("Transport connected to MCP server");
+  }).catch((error) => {
+    console.error("Error connecting transport to MCP server:", error);
+  });
 
-    res.on("close", () => {
-      console.log(`SSE connection closed. Session ID: ${transport.sessionId}`);
-      delete transports[transport.sessionId];
-    });
+  // Handle both GET (SSE) and POST (messages) requests at /mcp endpoint
+  app.all("/mcp", async (req: Request, res: Response) => {
+    if (!transport) {
+      res.status(500).send("Transport not initialized");
+      return;
+    }
 
     try {
-      await server.connect(transport);
-      console.log(`Transport connected to MCP server. Session ID: ${transport.sessionId}`);
+      console.log(`Handling ${req.method} request to /mcp`);
+      await transport.handleRequest(req, res, req.body);
     } catch (error) {
-      console.error(`Error connecting transport to MCP server. Session ID: ${transport.sessionId}`, error);
+      console.error(`Error handling request:`, error);
+      if (!res.headersSent) {
+        res.status(500).send("Internal Server Error");
+      }
     }
   });
 }
 
 export function setupMessageEndpoint(app: any) {
-  app.post("/messages", async (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string;
-    const transport = transports[sessionId] ?? Object.values(transports)[0];
-
-    if (transport) {
-      console.log(`Handling message for Session ID: ${sessionId}`);
-      try {
-        await transport.handlePostMessage(req, res);
-      } catch (error) {
-        console.error(`Error handling message for Session ID: ${sessionId}`, error);
-        res.status(500).send("Internal Server Error");
-      }
-    } else {
-      console.error(`No transport found for Session ID: ${sessionId}`);
-      res.status(400).send("No transport found for sessionId");
-    }
-  });
+  // This function is kept for backward compatibility but is no longer needed
+  // The StreamableHTTPServerTransport handles both GET and POST through the /mcp endpoint
+  console.log("Message endpoint setup is now handled by StreamableHTTPServerTransport");
 }

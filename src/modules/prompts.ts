@@ -2,17 +2,23 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 export function registerPrompts(server: McpServer) {
-  server.prompt(
+  // Register echo prompt using the non-deprecated API
+  server.registerPrompt(
     "echo",
-    { message: z.string() },
+    {
+      description: "Echoes a message back to the user",
+      argsSchema: { message: z.string() },
+    },
     ({ message }) => ({
-      messages: [{
-        role: "user",
-        content: {
-          type: "text",
-          text: `Please process this message: ${message}`
-        }
-      }]
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Please process this message: ${message}`,
+          },
+        },
+      ],
     })
   );
 }

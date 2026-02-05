@@ -2,13 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 export function registerTools(server: McpServer) {
-  // Math tool
-  server.tool(
+  // Register math tool using the non-deprecated API
+  server.registerTool(
     "math-tool",
     {
-      operation: z.enum(["add", "subtract", "multiply", "divide"]),
-      num1: z.string(),
-      num2: z.string(),
+      description: "Performs basic arithmetic operations",
+      inputSchema: {
+        operation: z.enum(["add", "subtract", "multiply", "divide"]),
+        num1: z.string(),
+        num2: z.string(),
+      },
     },
     async ({ operation, num1, num2 }) => {
       console.log(`Received request: operation=${operation}, num1=${num1}, num2=${num2}`);
