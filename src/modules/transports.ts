@@ -36,9 +36,3 @@ export function setupSSEEndpoint(app: any, server: McpServer) {
     }
   });
 }
-
-export function setupMessageEndpoint(app: any) {
-  // This function is kept for backward compatibility but is no longer needed
-  // The StreamableHTTPServerTransport handles both GET and POST through the /mcp endpoint
-  console.log("Message endpoint setup is now handled by StreamableHTTPServerTransport");
-}

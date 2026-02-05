@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerTools } from "./modules/tools";
 import { registerPrompts } from "./modules/prompts";
-import { setupSSEEndpoint, setupMessageEndpoint } from "./modules/transports";
+import { setupSSEEndpoint } from "./modules/transports";
 
 dotenv.config();
 
@@ -18,9 +18,8 @@ registerPrompts(server);
 
 const app = express();
 
-// Setup endpoints
+// Setup endpoint for SSE 
 setupSSEEndpoint(app, server);
-setupMessageEndpoint(app);
 
 const port = parseInt(process.env.PORT || "4000", 10);
 app.listen(port, () => {
